@@ -1,4 +1,4 @@
--- PS99 Tap Heroes Auto Clicker v1.1 | plalettescripts | KEYLESS
+-- PS99 Tap Heroes Auto Clicker v1.1| plalettescripts | KEYLESS
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
