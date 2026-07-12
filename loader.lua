@@ -1,31 +1,10 @@
--- PS99 Tap Heroes Auto Upgrade v1.1 | plalettescripts | KEYLESS
+-- PS99 Tap Heroes Auto Upgrade v1.4 | plalettescripts | KEYLESS
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
 local Config = { AutoUpgrade = false }
-
--- Upgrade-Teil finden (die Maschine/der NPC wo man Upgrades kauft)
-local function FindUpgradePart()
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("Model") then
-            local n = obj.Name:lower()
-            if n:find("upgrade") or n:find("shop") or n:find("buy") or n:find("merchant") then
-                if obj:IsA("BasePart") then
-                    return obj
-                elseif obj:IsA("Model") then
-                    local part = obj:FindFirstChildOfClass("BasePart") or obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                    if part then return part end
-                end
-            end
-        end
-    end
-    return nil
-end
 
 -- GUI
 local GUI = Instance.new("ScreenGui")
@@ -33,8 +12,8 @@ GUI.Name = "PS99_TapHeroes"
 GUI.Parent = CoreGui
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 180, 0, 70)
-Main.Position = UDim2.new(0.5, -90, 0.02, 0)
+Main.Size = UDim2.new(0, 190, 0, 70)
+Main.Position = UDim2.new(0.5, -95, 0.02, 0)
 Main.BackgroundColor3 = Color3.fromRGB(18, 20, 30)
 Main.BorderSizePixel = 0
 Main.Active = true
@@ -46,7 +25,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 22)
 Title.BackgroundColor3 = Color3.fromRGB(24, 26, 36)
 Title.TextColor3 = Color3.fromRGB(255, 150, 30)
-Title.Text = "👆 Tap Heroes v1.1"
+Title.Text = "👆 Tap Heroes v1.4"
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 12
 Title.Parent = Main
@@ -96,8 +75,8 @@ local Status = Instance.new("TextLabel")
 Status.Size = UDim2.new(1, -8, 0, 14)
 Status.Position = UDim2.new(0, 4, 0, 55)
 Status.BackgroundTransparency = 1
-Status.TextColor3 = Color3.fromRGB(140, 140, 160)
-Status.Text = "plalettescripts | v1.1 | KEYLESS"
+Status.TextColor3 = Color3.fromRGB(140, 160, 140)
+Status.Text = "plalettescripts | v1.4 | KEYLESS"
 Status.Font = Enum.Font.SourceSans
 Status.TextSize = 9
 Status.Parent = Main
@@ -110,61 +89,55 @@ TogBtn.MouseButton1Click:Connect(function()
     TogBtn.BackgroundColor3 = enabled and Color3.fromRGB(255, 150, 30) or Color3.fromRGB(50, 55, 68)
 end)
 
--- Auto Upgrade (nur zum Upgrade-Ding laufen und klicken)
+-- Nur Upgrades im geöffneten Fenster anklicken (KEIN Egg Upgrade)
 task.spawn(function()
     while true do
-        if Config.AutoUpgrade and LocalPlayer.Character then
+        if Config.AutoUpgrade then
             pcall(function()
-                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if not hrp or not hum then return end
+                local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+                if not playerGui then return end
                 
-                local upgradePart = FindUpgradePart()
+                local bought = 0
                 
-                if upgradePart then
-                    local dist = (upgradePart.Position - hrp.Position).Magnitude
-                    
-                    if dist > 8 then
-                        -- Zum Upgrade-Teil laufen
-                        hum.WalkSpeed = 60
-                        hum:MoveTo(upgradePart.Position)
-                        Status.Text = "Laufe zu Upgrade... " .. math.floor(dist) .. "m"
+                for _, obj in ipairs(playerGui:GetDescendants()) do
+                    if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                        local text = ""
+                        if obj:IsA("TextButton") then text = obj.Text:lower() end
+                        local name = obj.Name:lower()
+                        local parentName = obj.Parent and obj.Parent.Name:lower() or ""
+                        local parentParentName = obj.Parent and obj.Parent.Parent and obj.Parent.Parent.Name:lower() or ""
                         
-                        -- Warten bis nah genug
-                        local waited = 0
-                        repeat
-                            task.wait(0.1)
-                            waited = waited + 0.1
-                            if not Config.AutoUpgrade then break end
-                        until (upgradePart.Position - hrp.Position).Magnitude < 8 or waited > 5
-                    end
-                    
-                    if (upgradePart.Position - hrp.Position).Magnitude < 8 then
-                        Status.Text = "Kaufe Upgrade..."
-                        
-                        -- ProximityPrompt suchen und aktivieren
-                        local prompt = upgradePart:FindFirstChildOfClass("ProximityPrompt")
-                        if not prompt and upgradePart.Parent then
-                            prompt = upgradePart.Parent:FindFirstChildOfClass("ProximityPrompt")
-                        end
-                        if prompt then
-                            for _ = 1, 3 do
-                                fireproximityprompt(prompt)
+                        -- ALLES was nach Egg klingt ÜBERSPRINGEN
+                        if text:find("egg") or name:find("egg") or parentName:find("egg") or parentParentName:find("egg") then
+                            -- skip
+                        else
+                            -- Upgrade-Buttons erkennen
+                            local isUpgrade = false
+                            if name:find("upgrade") or name:find("buy") or name:find("purchase") then isUpgrade = true end
+                            if text:find("upgrade") or text:find("buy") or text:find("kauf") then isUpgrade = true end
+                            if parentName:find("upgrade") or parentName:find("shop") then isUpgrade = true end
+                            if parentParentName:find("upgrade") or parentParentName:find("shop") then isUpgrade = true end
+                            
+                            if isUpgrade and obj.Visible and obj.Active then
+                                pcall(function()
+                                    for _ = 1, 3 do
+                                        firesignal(obj.MouseButton1Click)
+                                        firesignal(obj.Activated)
+                                    end
+                                    bought = bought + 1
+                                end)
                             end
                         end
-                        
-                        -- Touch interest
-                        firetouchinterest(hrp, upgradePart, 0)
-                        firetouchinterest(hrp, upgradePart, 1)
-                        
-                        task.wait(0.5)
                     end
+                end
+                
+                if bought > 0 then
+                    Status.Text = "Gekauft: " .. bought
                 else
-                    Status.Text = "Kein Upgrade gefunden"
-                    task.wait(2)
+                    Status.Text = "Warte auf Tokens..."
                 end
             end)
         end
-        task.wait(0.5)
+        task.wait(0.3)
     end
 end)
